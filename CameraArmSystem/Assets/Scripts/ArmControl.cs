@@ -27,9 +27,9 @@ public class ArmControl : MonoBehaviour {
 	private Quaternion headRotation;
 
 	void Start () {
-		
-	}
 
+	}
+/*
 	void Update () {
 
 		print ("rotando cabeza");
@@ -45,7 +45,7 @@ public class ArmControl : MonoBehaviour {
 		lowerArm.rotation = Quaternion.Lerp(lowerArm.rotation, lowerRotation, Time.deltaTime);
 
 	}
-
+*/
 	public void rotateHead(float x, float y)
 	{
 		print ("rotando cabeza");

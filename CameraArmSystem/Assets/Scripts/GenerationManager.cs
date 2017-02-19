@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GenerationManager : MonoBehaviour {
-	
+
+	public GameObject camara;
+	public GameObject brazo;
+
 	private float rotateX;
 	private float rotateY;
 
@@ -11,8 +14,12 @@ public class GenerationManager : MonoBehaviour {
 
 	private Vector3 resul;
 
+  public float m_StartDelay = 5f;             // The delay between the start of RoundStarting and RoundPlaying phases.
+	public float m_PlayDelay = 5f;               // The delay between the end of RoundPlaying and RoundEnding phases.
+  public float m_EndDelay = 5f;               // The delay between the end of RoundPlaying and RoundEnding phases.
+
 	// Use this for initialization
-	void Start () 
+	void Start ()
 	{
 		StartCoroutine (GameLoop ());
 	}
@@ -43,27 +50,27 @@ public class GenerationManager : MonoBehaviour {
 
 		this.GetComponent<ArmControl> ().rotateHead (rotateX, rotateY);
 
-		yield return null;
+		yield return m_StartDelay;
 	}
 
 	private IEnumerator GenerationPlaying()
 	{
 		//mandar solo los puntos de la camara, nos manda los angulos, le mandamos de nuevo ahora los dos puntos para que genere el reward?
-		angulos = this.GetComponent<UDP> ().Evaluar (this.GetComponent<LaserCamara> ().getImpactPoint (), this.GetComponent<LaserBrazo> ().getImpactPoint ());
+		angulos = this.GetComponent<UDP> ().Evaluar (camara.GetComponent<LaserCamara> ().getImpactPoint (), brazo.GetComponent<LaserBrazo> ().getImpactPoint ());
 
 		this.GetComponent<ArmControl> ().rotateArm (angulos.x, angulos.y, angulos.z);
 
-		resul = this.GetComponent<LaserBrazo> ().getImpactPoint ();
+		resul = brazo.GetComponent<LaserBrazo> ().getImpactPoint ();
 
-		this.GetComponent<UDP> ().sendResul (Vector3.Distance(this.GetComponent<LaserCamara> ().getImpactPoint (), resul));
+		this.GetComponent<UDP> ().sendResul (Vector3.Distance(camara.GetComponent<LaserCamara> ().getImpactPoint (), resul));
 
-		yield return null;
+		yield return m_PlayDelay;
 	}
 
 	private IEnumerator GenerationEnding()
 	{
 		ResetHumanoid ();
-		yield return null;
+		yield return m_EndDelay;
 	}
 
 }
