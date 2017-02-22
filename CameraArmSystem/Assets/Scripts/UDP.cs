@@ -23,7 +23,7 @@ public class UDP : MonoBehaviour {
 	private byte[] dist;
 
 	//(anguloAlfa, anguloBeta, anguloGamma)
-	private Vector3 anguloArm;
+	private Vector3 anguloArm = new Vector3(0.0f, 0.0f, 0.0f);
 
 	public int clientPort; //11000
 	public int serverPort; //9900
@@ -43,7 +43,7 @@ public class UDP : MonoBehaviour {
 			udpClient.Connect("localhost", serverPort);
 			Debug.Log("Conectado");
 
-		}  
+		}
 		catch (Exception e ) {
 			Debug.Log(e.ToString());
 		}
@@ -53,13 +53,13 @@ public class UDP : MonoBehaviour {
 	//OJO SIEMPRE QUE SE LLAME A ESTA FUNCION SE TIENEN QUE PONER LOS ARGUMENTOS CON ALGUN VALOR DECIMAL EJEMPLO XXX.1
 	public Vector3 Evaluar (Vector3 cam, Vector3 arm) {
 		try{
-			camX = BitConverter.GetBytes(cam.x);
-			camY = BitConverter.GetBytes(cam.y);
-			camZ = BitConverter.GetBytes(cam.z);
+			camX = Encoding.ASCII.GetBytes(cam.x.ToString());
+			camY = Encoding.ASCII.GetBytes(cam.y.ToString());
+			camZ = Encoding.ASCII.GetBytes(cam.z.ToString());
 
-			armX = BitConverter.GetBytes(arm.x);
-			armY = BitConverter.GetBytes(arm.y);
-			armZ = BitConverter.GetBytes(arm.z);
+			armX = Encoding.ASCII.GetBytes(arm.x.ToString());
+			armY = Encoding.ASCII.GetBytes(arm.y.ToString());
+			armZ = Encoding.ASCII.GetBytes(arm.z.ToString());
 
 			// Sends a message to the host to which you have connected.
 			udpClient.Send(camX, camX.Length);
@@ -71,20 +71,26 @@ public class UDP : MonoBehaviour {
 			udpClient.Send(armZ, armZ.Length);
 
 			// Blocks until a message returns on this socket from a remote host.
-			bufRec = udpClient.Receive(ref RemoteIpEndPoint); 
+
+			bufRec = udpClient.Receive(ref RemoteIpEndPoint);
 			mRecibir = Encoding.ASCII.GetString(bufRec);
+			mRecibir = mRecibir.Replace('.', ',');
+			Debug.Log("AnguloX: " + float.Parse(mRecibir));
 			anguloArm.x = float.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 
-			bufRec = udpClient.Receive(ref RemoteIpEndPoint); 
+			bufRec = udpClient.Receive(ref RemoteIpEndPoint);
 			mRecibir = Encoding.ASCII.GetString(bufRec);
+			mRecibir = mRecibir.Replace('.', ',');
+			Debug.Log("AnguloY: " + float.Parse(mRecibir));
 			anguloArm.y = float.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 
-			bufRec = udpClient.Receive(ref RemoteIpEndPoint); 
+			bufRec = udpClient.Receive(ref RemoteIpEndPoint);
 			mRecibir = Encoding.ASCII.GetString(bufRec);
+			mRecibir = mRecibir.Replace('.', ',');
+			Debug.Log("AnguloZ: " + float.Parse(mRecibir));
 			anguloArm.z = float.Parse(mRecibir);
-
 
 		}catch (Exception e ) {
 			Debug.Log(e.ToString());
@@ -98,7 +104,7 @@ public class UDP : MonoBehaviour {
 
 	public void sendResul (float distancia) {
 		try{
-			dist = BitConverter.GetBytes(distancia);
+			dist = Encoding.ASCII.GetBytes(distancia.ToString());
 
 			// Sends a message to the host to which you have connected.
 			udpClient.Send(dist, dist.Length);
