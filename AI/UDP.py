@@ -1,79 +1,123 @@
 import socket
 import random
+import numpy as np
 
-UDP_IP = "127.0.0.1"
-CLIENT_PORT = 11000
-SERVER_PORT = 9900
 
-print "Inciando servidor UDP"
-sock = socket.socket(socket.AF_INET, # Internet
-                     socket.SOCK_DGRAM) # UDP
-sock.bind((UDP_IP, SERVER_PORT))
-print "conexion establecida"
 
-while True:
-    print "esperando a recibir datos"
-    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    print "string recibido: ", data
+class UDP:
 
-    print
+    def __init__(self):
+        self.UDP_IP = "127.0.0.1"
+        self.CLIENT_PORT = 11000
+        self.SERVER_PORT = 9900
+        print "Inciando servidor UDP"
+        self.sock = socket.socket(socket.AF_INET, # Internet
+                             socket.SOCK_DGRAM) # UDP
+        self.sock.bind((self.UDP_IP, self.SERVER_PORT))
+        print "conexion establecida"
 
-    camX = float(data.replace(',','.'))
-    print "camX: ", camX
-    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    camY = float(data.replace(',','.'))
-    print "camY: ", camY
-    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    camZ = float(data.replace(',','.'))
-    print "camZ: ", camZ
+    def newEpisode(self):
+        new = str(1)
 
-    print
+        byteNew = new.encode()
+        self.sock.sendto(byteNew, (self.UDP_IP, self.CLIENT_PORT))
 
-    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    armX = float(data.replace(',','.'))
-    print "armX: ", armX
-    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    armY = float(data.replace(',','.'))
-    print "armY: ", armY
-    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    armZ = float(data.replace(',','.'))
-    print "armZ: ", armZ
+        print
+        print "nuevo episodio"
 
-    print "todos los datos recibidos"
+    def noEpisode(self):
+        no = str(0)
 
-    print
+        byteNo = no.encode()
+        self.sock.sendto(byteNo, (self.UDP_IP, self.CLIENT_PORT))
 
-    alfa = random.uniform(0, 100)
-    print "alfa: ", alfa
-    beta = random.uniform(0, 100)
-    print "beta: ", beta
-    gamma = random.uniform(0, 100)
-    print "gamma: ", gamma
+    def newObservation(self):
+        print "esperando a recibir datos"
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        #print "string recibido: ", data
 
-    anguloAlfa = repr(alfa)
-    anguloBeta = repr(beta)
-    anguloGamma = repr(gamma)
+        print
 
-    print
+        camX = float(data.replace(',','.'))
+        print "camX: ", camX
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        camY = float(data.replace(',','.'))
+        print "camY: ", camY
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        camZ = float(data.replace(',','.'))
+        print "camZ: ", camZ
 
-    print "enviando respuesta"
+        print
 
-    byteAlfa = anguloAlfa.encode()
-    byteBeta = anguloBeta.encode()
-    byteGamma = anguloGamma.encode();
-    sock.sendto(byteAlfa, (UDP_IP, CLIENT_PORT))
-    sock.sendto(byteBeta, (UDP_IP, CLIENT_PORT))
-    sock.sendto(byteGamma, (UDP_IP, CLIENT_PORT))
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        armX = float(data.replace(',','.'))
+        print "armX: ", armX
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        armY = float(data.replace(',','.'))
+        print "armY: ", armY
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        armZ = float(data.replace(',','.'))
+        print "armZ: ", armZ
 
-    print "respuesta enviada"
+        print "todos los datos recibidos"
 
-    print
+        deltaX = armX - camX
+        deltaY = armY - camY
+        deltaZ = armZ - camZ
 
-    print "esperando resultado"
+        delta = np.array([deltaX, deltaY, deltaZ])
 
-    data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    distancia = float(data.replace(',','.'))
+        return delta
 
-    print "distancia recibida ", distancia
+    def sendAction(self, action):
 
-    print "-------------------------------"
+        print
+
+        print "alfa: ", action[0]
+        print "beta: ", action[1]
+        print "gamma: ", action[2]
+
+        anguloAlfa = repr(action[0])
+        anguloBeta = repr(action[1])
+        anguloGamma = repr(action[2])
+
+        print
+
+        print "enviando respuesta"
+
+        byteAlfa = anguloAlfa.encode()
+        byteBeta = anguloBeta.encode()
+        byteGamma = anguloGamma.encode();
+        self.sock.sendto(byteAlfa, (self.UDP_IP, self.CLIENT_PORT))
+        self.sock.sendto(byteBeta, (self.UDP_IP, self.CLIENT_PORT))
+        self.sock.sendto(byteGamma, (self.UDP_IP, self.CLIENT_PORT))
+
+        print "respuesta enviada"
+        print "esperando resultado"
+        print
+
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        alfa = float(data.replace(',','.'))
+        print "deltaAlfa: ", alfa
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        beta = float(data.replace(',','.'))
+        print "deltaBeta: ", beta
+        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        gamma = float(data.replace(',','.'))
+        print "deltaGamma: ", gamma
+
+        print
+        print "-------------------------------"
+
+        delta = np.array([alfa,beta,gamma])
+
+        #ajustar tanto para arriba como por abajo
+        if alfa < 0.1 and alfa > -0.1 and beta < 0.1 and beta > -0.1 and gamma < 0.1 and gamma > -0.1 :
+            done = True
+            reward = 1
+        else :
+            done = False
+            reward = 0
+
+        #devolver newObservation, reward, done
+        return delta, reward, done
