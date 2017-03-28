@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 public class GenerationManager : MonoBehaviour {
@@ -7,8 +8,8 @@ public class GenerationManager : MonoBehaviour {
 	public GameObject camara;
 	public GameObject brazo;
 
-	private float rotateX;
-	private float rotateY;
+	private float rotateX = 1.0f;
+	private float rotateY = 1.0f;
 
 	private Vector3 angulos;
 
@@ -21,34 +22,50 @@ public class GenerationManager : MonoBehaviour {
 	private Transform initArmRot;
 	private Transform initCamRot;
 
+	private bool wait = false;
+	private int i = 0;
+
+	private Thread managerThread;
+
+	private bool finishedH = false;
+	private bool finishedA = false;
+
+	private bool newEp = false;
+
 	// Use this for initialization
 	void Start ()
 	{
 		initArmRot = brazo.transform;
 		initCamRot = camara.transform;
+
+		// managerThread = new Thread (new ThreadStart (init));
+		//
+		// managerThread.IsBackground = true;
+		// managerThread.Start();
+
+		this.GetComponent<UDP> ().init();
+
 		StartCoroutine (GameLoop ());
-
 	}
 
-	private void ResetHumanoid()
-	{
-		camara.transform.position = initCamRot.position;
-		camara.transform.rotation = initCamRot.rotation;
-
-		brazo.transform.position = initArmRot.position;
-		brazo.transform.rotation = initArmRot.rotation;
-
-	}
+	// private void init()
+	// {
+	// 	this.GetComponent<UDP> ().init();
+	// 	StartCoroutine (GameLoop ());
+	// }
 
 	private IEnumerator GameLoop()
 	{
+		//print("Inicio bucle " + i);
+
 		//empezamos la nueva generacion
 		yield return StartCoroutine (GenerationStarting ());
 		//una vez que StartGeneration ha terminado empezamos la ejecuacion de la generacion
 		yield return StartCoroutine (GenerationPlaying ());
 		//una vez ha terminado la ejecucion de GenerationPlaying terminamos la generacion
 		yield return StartCoroutine (GenerationEnding ());
-
+		//print("Fin bucle " + i);
+		i++;
 		//volvemos a empezar
 		StartCoroutine(GameLoop());
 	}
@@ -56,29 +73,69 @@ public class GenerationManager : MonoBehaviour {
 	//preconfiguracion
 	private IEnumerator GenerationStarting()
 	{
-		rotateX = Random.Range (-90.0f, 90.0f);
-		rotateY = Random.Range (-90.0f, 90.0f);
+		//Mientras se espera a que acaben su movimiento el brazo y la cabeza se hacen iteraciones y se lee del socket, haciendo que python vaya 3 veces por delante que unity
 
-		//Debug.Log("rotateX: " + rotateX);
-		//Debug.Log("rotateY: " + rotateY);
+		//solo falta arreglar aqui
+		 if (this.GetComponent<UDP> ().nuevoEpisodio())
+		 {
+			 newEp = true;
+			rotateX = Random.Range (-90.0f, 90.0f);
+			rotateY = Random.Range (-90.0f, 90.0f);
 
-		yield return this.GetComponent<ArmControl> ().rotateHead (rotateX, rotateY);
+			while(!this.GetComponent<ArmControl> ().rotateHead (rotateX, rotateY))
+					yield return null;
+		 }
+
+		 finishedH = true;
+		// Debug.Log("rotateX: " + rotateX);
+		// Debug.Log("rotateY: " + rotateY);
+
 	}
 
 	private IEnumerator GenerationPlaying()
 	{
-		//mandar solo los puntos de la camara, nos manda los angulos, le mandamos de nuevo ahora los dos puntos para que genere el reward?
-		angulos = this.GetComponent<UDP> ().Evaluar (camara.GetComponent<LaserCamara> ().getImpactPoint (), brazo.GetComponent<LaserBrazo> ().getImpactPoint ());
+		if(newEp)
+		{
+			angulos = this.GetComponent<UDP> ().EvaluaNuevoEp (camara.GetComponent<LaserCamara> ().getImpactPoint (), brazo.GetComponent<LaserBrazo> ().getImpactPoint ());
+			newEp = false;
+		}
+		else {
+			angulos = this.GetComponent<UDP> ().EvaluaStep ();
+		}
 
-		yield return this.GetComponent<ArmControl> ().rotateArm (angulos.x, angulos.y, angulos.z);
+		while(!this.GetComponent<ArmControl> ().rotateArm (angulos.x, angulos.y, angulos.z))
+			yield return null;
+
+		finishedA = true;
 	}
 
 	private IEnumerator GenerationEnding()
 	{
-		resul = brazo.GetComponent<LaserBrazo> ().getImpactPoint ();
-		this.GetComponent<UDP> ().sendResul (Vector3.Distance(camara.GetComponent<LaserCamara> ().getImpactPoint (), resul));
+		float deltaAlfa, deltaBeta, deltaGamma;
+
+		if (finishedA && finishedH)
+		{
+			finishedH = false;
+			finishedA = false;
+
+			resul = brazo.GetComponent<LaserBrazo> ().getImpactPoint ();
+
+			deltaAlfa = camara.GetComponent<LaserCamara> ().getImpactPoint ().x - resul.x;
+			deltaBeta = camara.GetComponent<LaserCamara> ().getImpactPoint ().y - resul.y;
+			deltaGamma = camara.GetComponent<LaserCamara> ().getImpactPoint ().z - resul.z;
+
+			this.GetComponent<UDP> ().sendResul (deltaAlfa, deltaBeta, deltaGamma);
+		}
 
 		yield return new WaitForSeconds(m_EndDelay);
 	}
 
+	// public void OnApplicationQuit()
+	// 	{
+	// 		 // end of application
+	// 		 if (managerThread != null)
+	// 		 {
+	// 				managerThread.Abort();
+	// 		 }
+	// 	 }
 }
