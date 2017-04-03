@@ -27,7 +27,7 @@ public class UDP : MonoBehaviour {
 	private byte[] deltaGamma;
 
 	//(anguloAlfa, anguloBeta, anguloGamma)
-	private Vector3 anguloArm = new Vector3(0.0f, 0.0f, 0.0f);
+	private Vector3 anguloArm = new Vector3(0, 0, 0);
 
 	public int clientPort; //11000
 	public int serverPort; //9900
@@ -35,7 +35,7 @@ public class UDP : MonoBehaviour {
 	private String mRecibir;
 	private byte[] bufRec;
 
-	private float newEpisode = 0;
+	private int newEpisode = 0;
 	public bool isLive = false;
 
 	// Use this for initialization
@@ -100,7 +100,7 @@ public class UDP : MonoBehaviour {
 			mRecibir = Encoding.ASCII.GetString(bufRec);
 			mRecibir = mRecibir.Replace('.', ',');
 			//Debug.Log("AnguloX: " + float.Parse(mRecibir));
-			anguloArm.x = float.Parse(mRecibir);
+			anguloArm.x = int.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 			//print("Angulo X : " + anguloArm.x);
 
@@ -108,22 +108,22 @@ public class UDP : MonoBehaviour {
 			mRecibir = Encoding.ASCII.GetString(bufRec);
 			mRecibir = mRecibir.Replace('.', ',');
 			//Debug.Log("AnguloY: " + float.Parse(mRecibir));
-			anguloArm.y = float.Parse(mRecibir);
+			anguloArm.y = int.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 
 			bufRec = udpClient.Receive(ref RemoteIpEndPoint);
 			mRecibir = Encoding.ASCII.GetString(bufRec);
 			mRecibir = mRecibir.Replace('.', ',');
 			//Debug.Log("AnguloZ: " + float.Parse(mRecibir));
-			anguloArm.z = float.Parse(mRecibir);
+			anguloArm.z = int.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 
 
 		}catch (Exception e ) {
 			Debug.Log(e.ToString());
-			anguloArm.x = 0.0f;
-			anguloArm.y = 0.0f;
-			anguloArm.z = 0.0f;
+			anguloArm.x = 0;
+			anguloArm.y = 0;
+			anguloArm.z = 0;
 		}
 
 		return anguloArm;
@@ -138,7 +138,7 @@ public class UDP : MonoBehaviour {
 			mRecibir = Encoding.ASCII.GetString(bufRec);
 			mRecibir = mRecibir.Replace('.', ',');
 			//Debug.Log("AnguloX: " + float.Parse(mRecibir));
-			anguloArm.x = float.Parse(mRecibir);
+			anguloArm.x = int.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 			//print("Angulo X : " + anguloArm.x);
 
@@ -146,28 +146,28 @@ public class UDP : MonoBehaviour {
 			mRecibir = Encoding.ASCII.GetString(bufRec);
 			mRecibir = mRecibir.Replace('.', ',');
 			//Debug.Log("AnguloY: " + float.Parse(mRecibir));
-			anguloArm.y = float.Parse(mRecibir);
+			anguloArm.y = int.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 
 			bufRec = udpClient.Receive(ref RemoteIpEndPoint);
 			mRecibir = Encoding.ASCII.GetString(bufRec);
 			mRecibir = mRecibir.Replace('.', ',');
 			//Debug.Log("AnguloZ: " + float.Parse(mRecibir));
-			anguloArm.z = float.Parse(mRecibir);
+			anguloArm.z = int.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 
 
 		}catch (Exception e ) {
 			Debug.Log(e.ToString());
-			anguloArm.x = 0.0f;
-			anguloArm.y = 0.0f;
-			anguloArm.z = 0.0f;
+			anguloArm.x = 0;
+			anguloArm.y = 0;
+			anguloArm.z = 0;
 		}
 
 		return anguloArm;
 	}
 
-	public void sendResul (float alfa, float beta, float gamma) {
+	public void sendResul (int alfa, int beta, int gamma) {
 		try{
 
 			deltaAlfa = Encoding.ASCII.GetBytes(alfa.ToString());
@@ -192,7 +192,7 @@ public class UDP : MonoBehaviour {
 				mRecibir = Encoding.ASCII.GetString(bufRec);
 				newEpisode = int.Parse(mRecibir);
 				Array.Clear(bufRec, 0, bufRec.Length);
-				print("newEpisode : " + newEpisode);
+				//print("newEpisode : " + newEpisode);
 
 		 }catch (Exception e ) {
 		 	Debug.Log(e.ToString());

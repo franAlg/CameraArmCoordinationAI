@@ -10,21 +10,21 @@ public class ArmControl : MonoBehaviour {
 
 	[Header("Speed")]
 
-	public float Speed = 20.0f;
+	public float Speed = 500.0f;
 
 	[Header("Cabeza")]
 	//angulo Fi
-	public float headRotationX;
+	public int headRotationX;
 	//angulo Teta
-	public float headRotationY;
+	public int headRotationY;
 
 	[Header("Brazo")]
 	//angulo Alfa
-	public float upperRotationX;
+	public int upperRotationX;
 	//angulo Beta
-	public float upperRotationY;
+	public int upperRotationY;
 	//angulo Gamma
-	public float lowerRotationY;
+	public int lowerRotationY;
 
 	private Quaternion upperRotation;
 	private Quaternion lowerRotation;
@@ -55,7 +55,7 @@ public class ArmControl : MonoBehaviour {
 		lowerArm.rotation = Quaternion.Lerp(lowerArm.rotation, lowerRotation, Time.deltaTime*Speed);
 	}
 
-	public bool rotateHead(float x, float y)
+	public bool rotateHead(int x, int y)
 	{
 
 		//print ("rotando cabeza");
@@ -73,7 +73,7 @@ public class ArmControl : MonoBehaviour {
 	}
 
 	//alfa, beta, gamma
-	public bool rotateArm(float upperRotX, float upperRotY, float lowerRotY)
+	public bool rotateArm(int upperRotX, int upperRotY, int lowerRotY)
 	{
 		//positivo hacia abajo, negativo hacia arriba(inverso)
 		//positivo derecha, negativo izda

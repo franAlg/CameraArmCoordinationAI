@@ -10,6 +10,7 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.layers.normalization import BatchNormalization
 from keras.layers.advanced_activations import LeakyReLU
 from keras.regularizers import l2
+import tensorflow as tf
 
 import UDP
 
@@ -307,142 +308,169 @@ class DeepQ:
 
 #main
 
-start_time = time.time()
+with tf.device('/gpu:0'):
 
-epochs = 10 #1000
-steps = 10 #100000
-updateTargetNetwork = 10000
-explorationRate = 1
-minibatch_size = 128
-learnStart = 128
-learningRate = 0.00025
-discountFactor = 0.99
-memorySize = 1000000
+    start_time = time.time()
 
-last100Scores = [0] * 100
-last100ScoresIndex = 0
-last100Filled = False
+    epochs = 1000 #1000
+    steps = 10000 #100000
+    updateTargetNetwork = 10000
+    explorationRate = 1
+    minibatch_size = 128
+    learnStart = 2048 #128
+    learningRate = 0.00025
+    discountFactor = 0.99
+    memorySize = 1000000
 
-unity = UDP.UDP()
+    last100Scores = [0] * 100
+    last100ScoresIndex = 0
+    last100Filled = False
 
-deepQ = DeepQ(3, 27, memorySize, discountFactor, learningRate, learnStart)
-# deepQ.initNetworks([30,30,30])
-deepQ.initNetworks([30,30])
-# deepQ.initNetworks([300,300])
+    unity = UDP.UDP()
 
-stepCounter = 0
+    deepQ = DeepQ(3, 27, memorySize, discountFactor, learningRate, learnStart)
+    # deepQ.initNetworks([30,30,30])
+    # deepQ.initNetworks([30,30])
+    deepQ.initNetworks([300,300])
 
-plt.ion()
-fig = plt.figure()
-# ax = fig.add_subplot(111)
-#
-# # some X and Y data
-# li, = ax.plot(0, 0, 'r-')
-realEpoch = epochs - 1
-plt.xlim(0, realEpoch)
-plt.ylim(0, steps)
-plt.xlabel('epochs')
-plt.ylabel('steps')
+    stepCounter = 0
 
+    plt.ion()
+    fig1 = plt.figure(1)
+    #plt.subplot(211)
+    realEpoch = epochs - 1
+    plt.xlim(0, realEpoch)
+    plt.ylim(0, steps)
+    plt.xlabel('epochs')
+    plt.ylabel('steps')
 
-# fig = plt.figure()
-# ax1 = fig.add_subplot(111)
-# #ax1.scatter(xs, ys)
-plt.plot([], [], color='red')
-plt.pause(0.05)
+    plt.plot([], [], color='red')
+    plt.pause(0.001)
 
-# fig.canvas.draw()
+    # fig2 = plt.figure(2)
+    # #plt.subplot(212)
+    # realEpoch = epochs - 1
+    # plt.xlim(0, realEpoch)
+    # plt.ylim(ymin=0)
+    # plt.xlabel('epochs')
+    # plt.ylabel('max reward')
+    #
+    # plt.plot([], [], color='blue')
+    # plt.pause(0.01)
 
-allActions = []
-for item in itertools.product([-1,0,1], repeat = 3):
-    allActions.append(item)
+    #fig2.canvas.draw()
 
-#sys.exit(0)
+    allActions = []
+    for item in itertools.product([-1,0,1], repeat = 3):
+        allActions.append(item)
 
-# number of reruns
-for epoch in xrange(epochs):
+    #sys.exit(0)
 
-    #resetear el entorno para un nuevo episodio
-    #observation = env.reset()
+    # number of reruns
+    for epoch in xrange(epochs):
 
-    unity.newEpisode()
-    observation = unity.newObservation()
+        #resetear el entorno para un nuevo episodio
+        #observation = env.reset()
 
-    print "exploration rate : ", explorationRate
-    # number of timesteps
-    for t in xrange(steps):
-        if t != 0 :
-            unity.noEpisode()
+        unity.newEpisode()
+        observation = unity.newObservation()
 
-        #obtener entradas de unity
-        #env.render()
+        totalReward = 0
 
-        qValues = deepQ.getQValues(observation)
+        print "exploration rate : ", explorationRate
+        # number of timesteps
+        for t in xrange(steps):
+            if t != 0 :
+                unity.noEpisode()
 
-        #no se ha limitado el rango de valores de las acciones HECHO
+            #obtener entradas de unity
+            #env.render()
 
-        action = deepQ.selectAction(qValues, explorationRate)
+            qValues = deepQ.getQValues(observation)
 
-        #obtener resultado de la simulacion y evaluar
-        #newObservation, reward, done, info = env.step(action)
+            #no se ha limitado el rango de valores de las acciones HECHO
 
-        #ver como gestionar el reward y el done HECHO
-        #ver si obtener newObservation con otra llamada a newObservation o meterlo en sendAction HECHO
+            action = deepQ.selectAction(qValues, explorationRate)
 
-        #newObservation esta basada en la accion anterior
-        newObservation, reward, done = unity.sendAction(allActions[action])
+            #obtener resultado de la simulacion y evaluar
+            #newObservation, reward, done, info = env.step(action)
 
+            #ver como gestionar el reward y el done HECHO
+            #ver si obtener newObservation con otra llamada a newObservation o meterlo en sendAction HECHO
 
-        if done: #and t < 199:
-            print "Sucess!"
-            #reward = 0
+            #newObservation esta basada en la accion anterior
+            newObservation, reward, done = unity.sendAction(allActions[action])
 
-        if (t == steps-1) and not done:
-            print "Failed. Time out"
-            done = True
-        #    reward = 1
+            totalReward += reward
 
-        deepQ.addMemory(observation, action, reward, newObservation, done)
+            if done: #and t < 199:
+                print "Sucess!"
+                #reward = 0
 
-        if stepCounter >= learnStart:
-            if stepCounter <= updateTargetNetwork:
-                deepQ.learnOnMiniBatch(minibatch_size, False)
-            else :
-                deepQ.learnOnMiniBatch(minibatch_size, True)
+            if (t == steps-1) and not done:
+                print "Failed. Time out"
+                done = True
+            #    reward = 1
 
-        observation = newObservation
+            deepQ.addMemory(observation, action, reward, newObservation, done)
 
-        if done:
-            last100Scores[last100ScoresIndex] = t
-            last100ScoresIndex += 1
-            if last100ScoresIndex >= 100:
-                last100Filled = True
-                last100ScoresIndex = 0
-            if not last100Filled:
-                print "Episode ",epoch," finished after {} timesteps".format(t+1)
-            else :
-                print "Episode ",epoch," finished after {} timesteps".format(t+1)," last 100 average: ",(sum(last100Scores)/len(last100Scores))
+            if stepCounter >= learnStart:
+                if stepCounter <= updateTargetNetwork:
+                    deepQ.learnOnMiniBatch(minibatch_size, False)
+                else :
+                    deepQ.learnOnMiniBatch(minibatch_size, True)
 
-            plt.scatter(epoch, t+1, color='red')
-            plt.pause(0.01)
-            plt.savefig("resul.png")
+            observation = newObservation
 
-            break
-            #sys.exit(0)
-        stepCounter += 1
-        if stepCounter % updateTargetNetwork == 0:
-            deepQ.updateTargetNetwork()
-            print "updating target network"
+            if done:
+                last100Scores[last100ScoresIndex] = t
+                last100ScoresIndex += 1
+                if last100ScoresIndex >= 100:
+                    last100Filled = True
+                    last100ScoresIndex = 0
+                if not last100Filled:
+                    print "Episode ",epoch," finished after {} timesteps".format(t+1)
+                else :
+                    print "Episode ",epoch," finished after {} timesteps".format(t+1)," last 100 average: ",(sum(last100Scores)/len(last100Scores))
 
-        print "Fin timestep ", t+1
+                print "average reward in episode ", epoch, " is: ", totalReward
+                plt.figure(1)
+                #plt.subplot(211)
+                plt.scatter(epoch, t+1, color='red')
+                plt.plot(epoch, t+1, color='red')
+                plt.pause(0.001)
+                #fig1.canvas.draw()
+                plt.savefig("steps_episodes.png")
 
-    explorationRate *= 0.995
-    # explorationRate -= (2.0/epochs)
-    explorationRate = max (0.05, explorationRate)
+                # plt.figure(2)
+                # #plt.subplot(212)
+                # plt.scatter(epoch, totalReward, color='blue')
+                # plt.plot(epoch, totalReward, color='blue')
+                # plt.pause(0.001)
+                # #fig2.canvas.draw()
+                # plt.savefig("reward_episodes.png")
 
-plt.savefig("steps_episodes.png")
-m, s = divmod((time.time() - start_time), 60)
-h, m = divmod(m, 60)
-print
-print "--- Execution time -> %d:%02d:%02d ---" % (h, m, s)
-# env.monitor.close()
+                break
+                #sys.exit(0)
+            stepCounter += 1
+            if stepCounter % updateTargetNetwork == 0:
+                deepQ.updateTargetNetwork()
+                print "updating target network"
+
+            print "Fin timestep ", t+1
+
+        explorationRate *= 0.995
+        # explorationRate -= (2.0/epochs)
+        explorationRate = max (0.05, explorationRate)
+
+    plt.figure(1)
+    plt.savefig("steps_episodes.png")
+
+    # plt.figure(2)
+    # plt.savefig("reward_episodes.png")
+
+    m, s = divmod((time.time() - start_time), 60)
+    h, m = divmod(m, 60)
+    print
+    print "--- Execution time -> %d:%02d:%02d ---" % (h, m, s)
+    # env.monitor.close()

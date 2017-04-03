@@ -8,8 +8,8 @@ public class GenerationManager : MonoBehaviour {
 	public GameObject camara;
 	public GameObject brazo;
 
-	private float rotateX = 1.0f;
-	private float rotateY = 1.0f;
+	private int rotateX = 1;
+	private int rotateY = 1;
 
 	private Vector3 angulos;
 
@@ -79,16 +79,16 @@ public class GenerationManager : MonoBehaviour {
 		 if (this.GetComponent<UDP> ().nuevoEpisodio())
 		 {
 			 newEp = true;
-			rotateX = Random.Range (-90.0f, 90.0f);
-			rotateY = Random.Range (-90.0f, 90.0f);
+			rotateX = Random.Range (-90, 91);
+			rotateY = Random.Range (-90, 91);
 
 			while(!this.GetComponent<ArmControl> ().rotateHead (rotateX, rotateY))
 					yield return null;
 		 }
 
 		 finishedH = true;
-		// Debug.Log("rotateX: " + rotateX);
-		// Debug.Log("rotateY: " + rotateY);
+		//  Debug.Log("rotateX: " + rotateX);
+		//  Debug.Log("rotateY: " + rotateY);
 
 	}
 
@@ -103,7 +103,7 @@ public class GenerationManager : MonoBehaviour {
 			angulos = this.GetComponent<UDP> ().EvaluaStep ();
 		}
 
-		while(!this.GetComponent<ArmControl> ().rotateArm (angulos.x, angulos.y, angulos.z))
+		while(!this.GetComponent<ArmControl> ().rotateArm ((int)angulos.x, (int)angulos.y, (int)angulos.z))
 			yield return null;
 
 		finishedA = true;
@@ -111,7 +111,7 @@ public class GenerationManager : MonoBehaviour {
 
 	private IEnumerator GenerationEnding()
 	{
-		float deltaAlfa, deltaBeta, deltaGamma;
+		int deltaAlfa, deltaBeta, deltaGamma;
 
 		if (finishedA && finishedH)
 		{
@@ -120,14 +120,16 @@ public class GenerationManager : MonoBehaviour {
 
 			resul = brazo.GetComponent<LaserBrazo> ().getImpactPoint ();
 
-			deltaAlfa = camara.GetComponent<LaserCamara> ().getImpactPoint ().x - resul.x;
-			deltaBeta = camara.GetComponent<LaserCamara> ().getImpactPoint ().y - resul.y;
-			deltaGamma = camara.GetComponent<LaserCamara> ().getImpactPoint ().z - resul.z;
+			// +-1 grado de error en cada componente
+			deltaAlfa = (int)(camara.GetComponent<LaserCamara> ().getImpactPoint ().x - resul.x);
+			deltaBeta = (int)(camara.GetComponent<LaserCamara> ().getImpactPoint ().y - resul.y);
+			deltaGamma = (int)(camara.GetComponent<LaserCamara> ().getImpactPoint ().z - resul.z);
 
 			this.GetComponent<UDP> ().sendResul (deltaAlfa, deltaBeta, deltaGamma);
 		}
+		else yield return null;
 
-		yield return new WaitForSeconds(m_EndDelay);
+		//yield return new WaitForSeconds(m_EndDelay);
 	}
 
 	// public void OnApplicationQuit()
