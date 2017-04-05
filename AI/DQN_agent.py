@@ -312,12 +312,12 @@ with tf.device('/gpu:0'):
 
     start_time = time.time()
 
-    epochs = 1000 #1000
-    steps = 10000 #100000
+    epochs = 200 #1000
+    steps = 20000 #100000
     updateTargetNetwork = 10000
     explorationRate = 1
     minibatch_size = 128
-    learnStart = 2048 #128
+    learnStart = 512 #128
     learningRate = 0.00025
     discountFactor = 0.99
     memorySize = 1000000
@@ -334,37 +334,43 @@ with tf.device('/gpu:0'):
     deepQ.initNetworks([300,300])
 
     stepCounter = 0
+    realEpoch = epochs - 1
 
     plt.ion()
     fig1 = plt.figure(1)
-    #plt.subplot(211)
-    realEpoch = epochs - 1
     plt.xlim(0, realEpoch)
     plt.ylim(0, steps)
     plt.xlabel('epochs')
     plt.ylabel('steps')
+    plt.plot([], [], color='blue')
 
-    plt.plot([], [], color='red')
-    plt.pause(0.001)
+    plt.ion()
+    fig2 = plt.figure(2)
+    plt.xlim(0, realEpoch)
+    plt.ylim(ymin=0)
+    plt.xlabel('epochs')
+    plt.ylabel('average reward')
+    plt.plot([], [], color='blue')
 
-    # fig2 = plt.figure(2)
-    # #plt.subplot(212)
-    # realEpoch = epochs - 1
-    # plt.xlim(0, realEpoch)
-    # plt.ylim(ymin=0)
-    # plt.xlabel('epochs')
-    # plt.ylabel('max reward')
-    #
-    # plt.plot([], [], color='blue')
-    # plt.pause(0.01)
+    plt.ion()
+    fig3 = plt.figure(3)
+    plt.xlim(0, realEpoch)
+    plt.xlabel('epochs')
+    plt.ylabel('average Q-Value')
+    plt.plot([], [], color='blue')
 
-    #fig2.canvas.draw()
+    plt.show(block=False)
 
     allActions = []
     for item in itertools.product([-1,0,1], repeat = 3):
         allActions.append(item)
 
     #sys.exit(0)
+
+    numEpoch = list()
+    numTimesteps = list()
+    averageReward = list()
+    averageQvalue = list()
 
     # number of reruns
     for epoch in xrange(epochs):
@@ -376,6 +382,7 @@ with tf.device('/gpu:0'):
         observation = unity.newObservation()
 
         totalReward = 0
+        totalQvalue = 0
 
         print "exploration rate : ", explorationRate
         # number of timesteps
@@ -383,25 +390,18 @@ with tf.device('/gpu:0'):
             if t != 0 :
                 unity.noEpisode()
 
-            #obtener entradas de unity
-            #env.render()
+            #VER DONDE SE CONSUME EL TIEMPO EN CADA TIMESTEP
 
             qValues = deepQ.getQValues(observation)
 
-            #no se ha limitado el rango de valores de las acciones HECHO
-
             action = deepQ.selectAction(qValues, explorationRate)
-
-            #obtener resultado de la simulacion y evaluar
-            #newObservation, reward, done, info = env.step(action)
-
-            #ver como gestionar el reward y el done HECHO
-            #ver si obtener newObservation con otra llamada a newObservation o meterlo en sendAction HECHO
 
             #newObservation esta basada en la accion anterior
             newObservation, reward, done = unity.sendAction(allActions[action])
 
             totalReward += reward
+            totalQvalue += deepQ.getMaxQ(qValues)
+
 
             if done: #and t < 199:
                 print "Sucess!"
@@ -433,22 +433,27 @@ with tf.device('/gpu:0'):
                 else :
                     print "Episode ",epoch," finished after {} timesteps".format(t+1)," last 100 average: ",(sum(last100Scores)/len(last100Scores))
 
-                print "average reward in episode ", epoch, " is: ", totalReward
+                #print "average reward in episode ", epoch, " is: ", totalReward
                 plt.figure(1)
-                #plt.subplot(211)
-                plt.scatter(epoch, t+1, color='red')
-                plt.plot(epoch, t+1, color='red')
-                plt.pause(0.001)
-                #fig1.canvas.draw()
+                numEpoch.append(epoch)
+                numTimesteps.append(t+1)
+                plt.plot(numEpoch, numTimesteps, 'b-')
+                fig1.canvas.draw()
                 plt.savefig("steps_episodes.png")
 
-                # plt.figure(2)
-                # #plt.subplot(212)
-                # plt.scatter(epoch, totalReward, color='blue')
-                # plt.plot(epoch, totalReward, color='blue')
-                # plt.pause(0.001)
-                # #fig2.canvas.draw()
-                # plt.savefig("reward_episodes.png")
+                plt.figure(2)
+                averageReward.append(totalReward/t)
+                plt.plot(numEpoch, averageReward, 'b-')
+                fig2.canvas.draw()
+                plt.savefig("reward_episodes.png")
+
+                plt.figure(3)
+                averageQvalue.append(totalQvalue/t)
+                plt.plot(numEpoch, averageQvalue, 'b-')
+                fig3.canvas.draw()
+                plt.savefig("Qvalue_episodes.png")
+
+                plt.pause(0.0001)
 
                 break
                 #sys.exit(0)
@@ -462,12 +467,6 @@ with tf.device('/gpu:0'):
         explorationRate *= 0.995
         # explorationRate -= (2.0/epochs)
         explorationRate = max (0.05, explorationRate)
-
-    plt.figure(1)
-    plt.savefig("steps_episodes.png")
-
-    # plt.figure(2)
-    # plt.savefig("reward_episodes.png")
 
     m, s = divmod((time.time() - start_time), 60)
     h, m = divmod(m, 60)
