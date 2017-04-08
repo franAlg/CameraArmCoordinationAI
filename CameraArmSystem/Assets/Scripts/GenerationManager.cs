@@ -79,8 +79,8 @@ public class GenerationManager : MonoBehaviour {
 		 if (this.GetComponent<UDP> ().nuevoEpisodio())
 		 {
 			 newEp = true;
-			rotateX = Random.Range (-90, 91);
-			rotateY = Random.Range (-90, 91);
+			rotateX = Random.Range (-40, 41);
+			rotateY = Random.Range (-40, 41);
 
 			while(!this.GetComponent<ArmControl> ().rotateHead (rotateX, rotateY))
 					yield return null;

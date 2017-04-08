@@ -1,5 +1,5 @@
 '''
-Deep Q-learning approach for robotic arm
+Deep Q-learning approach for robotic arm and camera coordination
 '''
 
 import random
@@ -198,7 +198,6 @@ class DeepQ:
         predicted = self.model.predict(state.reshape(1,len(state)))
         return predicted[0]
 
-#HACER QUE Q VALUES SEA SOLO UN VALOR PERO EL INDICE SEA UN ARRAY DE 3 VALORES O ALGO ASI
     def getTargetQValues(self, state):
         predicted = self.targetModel.predict(state.reshape(1,len(state)))
         return predicted[0]
@@ -222,20 +221,8 @@ class DeepQ:
     # select the action with the highest Q value
     def selectAction(self, qValues, explorationRate):
         rand = random.random()
-        #action = np.empty(3, dtype=int)
-        #action = np.array([0,0,0], dtype=np.int32)
-        #action = ()
         if rand < explorationRate :
             action = np.random.randint(0, self.output_size)
-            #self.output_size
-            #alfa
-            #action.append = np.random.randint(-90, 90)
-            #beta
-            #action.append = np.random.randint(0, 90)
-            #gamma
-            #action.append = np.random.randint(-90, 90)
-            #action = (np.random.randint(-90, 90), np.random.randint(0, 90), np.random.randint(-90, 90))
-            #action = np.array([np.random.randint(-90, 90), np.random.randint(0, 90), np.random.randint(-90, 90)])
         else :
             action = self.getMaxIndex(qValues)
         return action
@@ -317,7 +304,7 @@ with tf.device('/gpu:0'):
     updateTargetNetwork = 10000
     explorationRate = 1
     minibatch_size = 128
-    learnStart = 512 #128
+    learnStart = 128
     learningRate = 0.00025
     discountFactor = 0.99
     memorySize = 1000000
@@ -329,8 +316,8 @@ with tf.device('/gpu:0'):
     unity = UDP.UDP()
 
     deepQ = DeepQ(3, 27, memorySize, discountFactor, learningRate, learnStart)
-    # deepQ.initNetworks([30,30,30])
-    # deepQ.initNetworks([30,30])
+    #deepQ.initNetworks([30,30,30])
+    #deepQ.initNetworks([30,30])
     deepQ.initNetworks([300,300])
 
     stepCounter = 0
@@ -390,8 +377,6 @@ with tf.device('/gpu:0'):
             if t != 0 :
                 unity.noEpisode()
 
-            #VER DONDE SE CONSUME EL TIEMPO EN CADA TIMESTEP
-
             qValues = deepQ.getQValues(observation)
 
             action = deepQ.selectAction(qValues, explorationRate)
@@ -442,18 +427,24 @@ with tf.device('/gpu:0'):
                 plt.savefig("steps_episodes.png")
 
                 plt.figure(2)
-                averageReward.append(totalReward/t)
+                print "total ", totalReward
+                print "t ", t
+                if (totalReward == 0):
+                    averageReward.append(0)
+                else :
+                    averageReward.append(totalReward/(t+1))
                 plt.plot(numEpoch, averageReward, 'b-')
                 fig2.canvas.draw()
                 plt.savefig("reward_episodes.png")
 
                 plt.figure(3)
-                averageQvalue.append(totalQvalue/t)
+                averageQvalue.append(totalQvalue/(t+1))
                 plt.plot(numEpoch, averageQvalue, 'b-')
                 fig3.canvas.draw()
                 plt.savefig("Qvalue_episodes.png")
 
-                plt.pause(0.0001)
+                plt.show(block=False)
+                #plt.pause(0.0001)
 
                 break
                 #sys.exit(0)

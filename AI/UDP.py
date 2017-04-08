@@ -37,29 +37,29 @@ class UDP:
 
     def newObservation(self):
         #print "esperando a recibir datos"
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         #print "string recibido: ", data
 
         print
 
         camX = int(float(data.replace(',','.')))
         # print "camX: ", camX
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         camY = int(float(data.replace(',','.')))
         # print "camY: ", camY
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         camZ = int(float(data.replace(',','.')))
         # print "camZ: ", camZ
 
         print
 
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         armX = int(float(data.replace(',','.')))
         # print "armX: ", armX
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         armY = int(float(data.replace(',','.')))
         # print "armY: ", armY
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         armZ = int(float(data.replace(',','.')))
         # print "armZ: ", armZ
 
@@ -100,13 +100,13 @@ class UDP:
         # print "esperando resultado"
         # print
 
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         alfa = int(float(data.replace(',','.')))
         # print "deltaAlfa: ", alfa
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         beta = int(float(data.replace(',','.')))
         # print "deltaBeta: ", beta
-        data, addr = self.sock.recvfrom(1024) # buffer size is 1024 bytes
+        data, addr = self.sock.recvfrom(4) # buffer size is 1024 bytes
         gamma = int(float(data.replace(',','.')))
         # print "deltaGamma: ", gamma
 
@@ -120,7 +120,13 @@ class UDP:
         if alfa <= 1 and alfa >= -1 and beta <= 1 and beta >= -1 and gamma <= 1 and gamma >= -1 :
             done = True
 
-            reward = 1
+            reward = 1.0
+
+            # print "-------------------------------"
+            # print "last distance: ", self.lastDist
+            # print "actual distance: ", np.linalg.norm(delta-self.lastDelta)
+            # print "reward : ", reward
+            # print "-------------------------------"
 
         else :
             done = False

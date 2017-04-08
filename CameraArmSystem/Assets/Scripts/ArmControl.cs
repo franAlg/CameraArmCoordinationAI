@@ -81,6 +81,7 @@ public class ArmControl : MonoBehaviour {
 		//print ("rotando upper arm");
 		if(firstR)
 		{
+			if (upperRotX > -90 && upperRotX < 90 && upperRotY > 0 && upperRotY < 90 && lowerRotY > -90 && lowerRotY < 90)
 			//print ("uX = " + upperRotX);
 			upperRotationX += upperRotX;
 			upperRotationY += upperRotY;
