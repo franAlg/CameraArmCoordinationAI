@@ -299,12 +299,12 @@ with tf.device('/gpu:0'):
 
     start_time = time.time()
 
-    epochs = 200 #1000
-    steps = 20000 #100000
+    epochs = 3000 #1000 #10000
+    steps = 600 #20000 #100000
     updateTargetNetwork = 10000
     explorationRate = 1
-    minibatch_size = 128
-    learnStart = 128
+    minibatch_size = 32 #128
+    learnStart = 32 #128
     learningRate = 0.00025
     discountFactor = 0.99
     memorySize = 1000000
@@ -326,24 +326,22 @@ with tf.device('/gpu:0'):
     plt.ion()
     fig1 = plt.figure(1)
     plt.xlim(0, realEpoch)
-    plt.ylim(0, steps)
-    plt.xlabel('epochs')
-    plt.ylabel('steps')
+    plt.xlabel('Epochs')
+    plt.ylabel('Successes')
     plt.plot([], [], color='blue')
 
     plt.ion()
     fig2 = plt.figure(2)
     plt.xlim(0, realEpoch)
-    plt.ylim(ymin=0)
-    plt.xlabel('epochs')
-    plt.ylabel('average reward')
+    plt.xlabel('Epochs')
+    plt.ylabel('Average Reward')
     plt.plot([], [], color='blue')
 
     plt.ion()
     fig3 = plt.figure(3)
     plt.xlim(0, realEpoch)
-    plt.xlabel('epochs')
-    plt.ylabel('average Q-Value')
+    plt.xlabel('Epochs')
+    plt.ylabel('Average Q-Value')
     plt.plot([], [], color='blue')
 
     plt.show(block=False)
@@ -358,6 +356,8 @@ with tf.device('/gpu:0'):
     numTimesteps = list()
     averageReward = list()
     averageQvalue = list()
+
+    numDones = 0
 
     # number of reruns
     for epoch in xrange(epochs):
@@ -390,6 +390,7 @@ with tf.device('/gpu:0'):
 
             if done: #and t < 199:
                 print "Sucess!"
+                numDones += 1
                 #reward = 0
 
             if (t == steps-1) and not done:
@@ -421,25 +422,27 @@ with tf.device('/gpu:0'):
                 #print "average reward in episode ", epoch, " is: ", totalReward
                 plt.figure(1)
                 numEpoch.append(epoch)
-                numTimesteps.append(t+1)
-                plt.plot(numEpoch, numTimesteps, 'b-')
+                numTimesteps.append(numDones)
+                plt.plot(numEpoch, numTimesteps, 'b-', linewidth=0.1)
                 fig1.canvas.draw()
                 plt.savefig("steps_episodes.png")
 
-                plt.figure(2)
-                print "total ", totalReward
-                print "t ", t
                 if (totalReward == 0):
                     averageReward.append(0)
                 else :
                     averageReward.append(totalReward/(t+1))
-                plt.plot(numEpoch, averageReward, 'b-')
+
+                plt.figure(2)
+                plt.plot(numEpoch, averageReward, 'b-', linewidth=0.1)
                 fig2.canvas.draw()
                 plt.savefig("reward_episodes.png")
 
                 plt.figure(3)
                 averageQvalue.append(totalQvalue/(t+1))
-                plt.plot(numEpoch, averageQvalue, 'b-')
+                plt.plot(numEpoch, averageQvalue, 'b-', linewidth=0.1)
+                z = np.polyfit(numEpoch, averageQvalue, 1)
+                p = np.poly1d(z)
+                plt.plot(numEpoch,p(numEpoch),"r-", linewidth=1.5)
                 fig3.canvas.draw()
                 plt.savefig("Qvalue_episodes.png")
 
@@ -453,7 +456,7 @@ with tf.device('/gpu:0'):
                 deepQ.updateTargetNetwork()
                 print "updating target network"
 
-            print "Fin timestep ", t+1
+            #print "Fin timestep ", t+1
 
         explorationRate *= 0.995
         # explorationRate -= (2.0/epochs)

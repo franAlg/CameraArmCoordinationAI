@@ -117,7 +117,7 @@ class UDP:
 
 
         #ajustar tanto para arriba como por abajo
-        if alfa <= 1 and alfa >= -1 and beta <= 1 and beta >= -1 and gamma <= 1 and gamma >= -1 :
+        if alfa <= 0.1 and alfa >= -0.1 and beta <= 0.1 and beta >= -0.1 and gamma <= 0.1 and gamma >= -0.1 :
             done = True
 
             reward = 1.0
@@ -140,7 +140,7 @@ class UDP:
             # print "reward : ", reward
             # print "-------------------------------"
 
-            self.lastDist = np.linalg.norm(delta-self.lastDelta)
+            #self.lastDist = np.linalg.norm(delta-self.lastDelta)
 
         #devolver newObservation, reward, done
         return delta, reward, done

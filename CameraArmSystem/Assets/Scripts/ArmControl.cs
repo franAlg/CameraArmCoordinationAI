@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ArmControl : MonoBehaviour {
 
@@ -26,6 +27,11 @@ public class ArmControl : MonoBehaviour {
 	//angulo Gamma
 	public int lowerRotationY;
 
+	[Header("Angles_UI")]
+	public Text text;
+
+//---
+
 	private Quaternion upperRotation;
 	private Quaternion lowerRotation;
 	private Quaternion headRotation;
@@ -34,12 +40,7 @@ public class ArmControl : MonoBehaviour {
 	private bool auxArm = false;
 
 	private bool firstR = true;
-
-
-
-	void Start () {
-
-	}
+	private bool firstReset = true;
 
 	void Update () {
 		//print ("rotando cabeza");
@@ -53,6 +54,21 @@ public class ArmControl : MonoBehaviour {
 		//print ("rotando lower arm");
 		lowerRotation = Quaternion.Euler(0, lowerRotationY, 0);
 		lowerArm.rotation = Quaternion.Lerp(lowerArm.rotation, lowerRotation, Time.deltaTime*Speed);
+	}
+
+	public bool resetArm()
+	{
+		upperRotationX = 0;
+		upperRotationY = 0;
+		lowerRotationY = 0;
+
+		if((Quaternion.Angle(Quaternion.Euler(upperRotationX, upperRotationY, 0.0f), Quaternion.Euler(upperArm.transform.eulerAngles)) < 0.1f) &&
+			 (Quaternion.Angle(Quaternion.Euler(0.0f, lowerRotationY, 0.0f), Quaternion.Euler(lowerArm.transform.eulerAngles)) < 0.1f))
+			{
+				return true;
+			}
+
+		return false;
 	}
 
 	public bool rotateHead(int x, int y)
@@ -81,13 +97,25 @@ public class ArmControl : MonoBehaviour {
 		//print ("rotando upper arm");
 		if(firstR)
 		{
-			if (upperRotX > -90 && upperRotX < 90 && upperRotY > 0 && upperRotY < 90 && lowerRotY > -90 && lowerRotY < 90)
-			//print ("uX = " + upperRotX);
-			upperRotationX += upperRotX;
-			upperRotationY += upperRotY;
+			if (upperRotationX >= -90 && upperRotationX <= 90 && upperRotationY >= 0 && upperRotationY <= 90 && lowerRotationY >= -90 && lowerRotationY <= 90)
+			{
+				if ((upperRotationX == -90 && upperRotX == -1) || (upperRotationX == 90 && upperRotX == 1) ||
+				 		(upperRotationY == 0 && upperRotY == -1) || (upperRotationY == 90 && upperRotY == 1) ||
+				 		(lowerRotationY == -90 && lowerRotY == -1) || (lowerRotationY == 90 && lowerRotY == 1))
+				{
+					//do nothing
+				}
+				else {
+					//print ("uX = " + upperRotX);
+					upperRotationX += upperRotX;
+					upperRotationY += upperRotY;
 
-			//print ("rotando lower arm");
-			lowerRotationY += lowerRotY;
+					//print ("rotando lower arm");
+					lowerRotationY += lowerRotY;
+				}
+			}
+
+			text.text = "Alfa:       " + upperRotationX + "\nBeta:      " + upperRotationY + "\nGamma: " + lowerRotationY;
 			firstR = false;
 		}
 

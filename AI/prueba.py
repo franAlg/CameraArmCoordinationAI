@@ -9,7 +9,7 @@ observation = name.newObservation()
 
 i = 0
 
-while i < 500 :
+while True :
     if i != 0 :
         if i == 5 :
             name.newEpisode()
@@ -17,4 +17,5 @@ while i < 500 :
             name.noEpisode()
     action = [i,i,i]
     name.sendAction(action)
+    print "fin iteracion ", i
     i += 1

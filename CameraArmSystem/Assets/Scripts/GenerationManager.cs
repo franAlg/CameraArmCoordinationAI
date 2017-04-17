@@ -2,46 +2,46 @@
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GenerationManager : MonoBehaviour {
+
 
 	public GameObject camara;
 	public GameObject brazo;
 
-	private int rotateX = 1;
-	private int rotateY = 1;
-
-	private Vector3 angulos;
-
-	private Vector3 resul;
+	[Header("Delays")]
 
   public float m_StartDelay = 1.0f;             // The delay between the start of RoundStarting and RoundPlaying phases.
 	public float m_PlayDelay = 1.0f;               // The delay between the end of RoundPlaying and RoundEnding phases.
   public float m_EndDelay = 1.0f;               // The delay between the end of RoundPlaying and RoundEnding phases.
 
-	private Transform initArmRot;
-	private Transform initCamRot;
+	[Header("Distance_UI")]
+
+	public Text text;
+
+//---
+
+	private int rotateX = 1;
+	private int rotateY = 1;
+
+	private Vector3 angulos;
+	private Vector3 resul;
 
 	private bool wait = false;
 	private int i = 0;
-
-	private Thread managerThread;
 
 	private bool finishedH = false;
 	private bool finishedA = false;
 
 	private bool newEp = false;
 
+
+
 	// Use this for initialization
 	void Start ()
 	{
-		initArmRot = brazo.transform;
-		initCamRot = camara.transform;
-
-		// managerThread = new Thread (new ThreadStart (init));
-		//
-		// managerThread.IsBackground = true;
-		// managerThread.Start();
+		text.text = "Distancia: ";
 
 		this.GetComponent<UDP> ().init();
 
@@ -84,6 +84,9 @@ public class GenerationManager : MonoBehaviour {
 
 			while(!this.GetComponent<ArmControl> ().rotateHead (rotateX, rotateY))
 					yield return null;
+
+			while(!this.GetComponent<ArmControl> ().resetArm ())
+					yield return null;
 		 }
 
 		 finishedH = true;
@@ -119,6 +122,8 @@ public class GenerationManager : MonoBehaviour {
 			finishedA = false;
 
 			resul = brazo.GetComponent<LaserBrazo> ().getImpactPoint ();
+
+			text.text = "Distancia: " + Vector3.Distance(resul, camara.GetComponent<LaserCamara> ().getImpactPoint ());
 
 			// +-1 grado de error en cada componente
 			deltaAlfa = (int)(camara.GetComponent<LaserCamara> ().getImpactPoint ().x - resul.x);
