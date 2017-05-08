@@ -4,6 +4,7 @@ Deep Q-learning approach for robotic arm and camera coordination
 
 import random
 import numpy as np
+from keras.models import load_model
 from keras.models import Sequential
 from keras import optimizers
 from keras.layers.core import Dense, Dropout, Activation
@@ -19,10 +20,6 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import sys
 import time
-
-def update_line(num, data, line):
-    line.set_data(data[..., :num])
-    return line,
 
 class Memory:
     """
@@ -98,6 +95,10 @@ class DeepQ:
         self.discountFactor = discountFactor
         self.learnStart = learnStart
         self.learningRate = learningRate
+
+    def loadModel(self):
+        self.model = load_model('savedModels/model_DQN.h5')
+        # self.targetModel = load_model('savedModels/model_DQN.h5')
 
     def initNetworks(self, hiddenLayers):
         model = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
@@ -263,7 +264,7 @@ class DeepQ:
     def learnOnMiniBatch(self, miniBatchSize, useTargetNetwork=True):
         # Do not learn until we've got self.learnStart samples
         if self.memory.getCurrentSize() > self.learnStart:
-            # learn in batches of 128
+            # learn in batches of 32
             miniBatch = self.memory.getMiniBatch(miniBatchSize)
             X_batch = np.empty((0,self.input_size), dtype = np.float64)
             Y_batch = np.empty((0,self.output_size), dtype = np.float64)
@@ -275,8 +276,7 @@ class DeepQ:
                 newState = sample['newState']
 
                 qValues = self.getQValues(state)
-                #print "action = ", action
-                #print "qValues = ", qValues
+
                 if useTargetNetwork:
                     qValuesNewState = self.getTargetQValues(newState)
                 else :
@@ -299,15 +299,24 @@ with tf.device('/gpu:0'):
 
     start_time = time.time()
 
-    epochs = 3000 #1000 #10000
-    steps = 600 #20000 #100000
-    updateTargetNetwork = 10000
+    epochs = 3000
+    steps = 2000 #600
+    updateTargetNetwork = 200 #500
     explorationRate = 1
-    minibatch_size = 32 #128
-    learnStart = 32 #128
+    minibatch_size = 32
+    learnStart = 32
     learningRate = 0.00025
     discountFactor = 0.99
     memorySize = 1000000
+
+    explorationFactor = 0.995
+
+    Train = False
+
+    if not Train:
+        epochs = 1000
+        steps = 500
+        explorationRate = 0.05
 
     last100Scores = [0] * 100
     last100ScoresIndex = 0
@@ -315,10 +324,15 @@ with tf.device('/gpu:0'):
 
     unity = UDP.UDP()
 
-    deepQ = DeepQ(3, 27, memorySize, discountFactor, learningRate, learnStart)
+    deepQ = DeepQ(6, 12, memorySize, discountFactor, learningRate, learnStart)
+    #deepQ = DeepQ(3, 27, memorySize, discountFactor, learningRate, learnStart)
+
     #deepQ.initNetworks([30,30,30])
     #deepQ.initNetworks([30,30])
-    deepQ.initNetworks([300,300])
+    if Train:
+        deepQ.initNetworks([300,300])
+    else:
+        deepQ.loadModel()
 
     stepCounter = 0
     realEpoch = epochs - 1
@@ -334,7 +348,7 @@ with tf.device('/gpu:0'):
     fig2 = plt.figure(2)
     plt.xlim(0, realEpoch)
     plt.xlabel('Epochs')
-    plt.ylabel('Average Reward')
+    plt.ylabel('Total Reward')
     plt.plot([], [], color='blue')
 
     plt.ion()
@@ -344,71 +358,111 @@ with tf.device('/gpu:0'):
     plt.ylabel('Average Q-Value')
     plt.plot([], [], color='blue')
 
+    plt.ion()
+    fig4 = plt.figure(4)
+    plt.xlim(0, realEpoch)
+    plt.xlabel('Epochs')
+    plt.ylabel('Epsilon')
+    plt.plot([], [], color='blue')
+
     plt.show(block=False)
 
     allActions = []
-    for item in itertools.product([-1,0,1], repeat = 3):
+    for item in itertools.product([-1,1], repeat = 3):
         allActions.append(item)
 
-    #sys.exit(0)
+    allActions.append((-1, -1, 0))
+    allActions.append((-1, 1, 0))
+    allActions.append((1, -1, 0))
+    allActions.append((1, 1, 0))
+    # allActions.remove((0,0,0))
+
+    print allActions
 
     numEpoch = list()
     numTimesteps = list()
     averageReward = list()
     averageQvalue = list()
+    epsilon = list()
 
     numDones = 0
+    lastDistance = 0
 
     # number of reruns
     for epoch in xrange(epochs):
 
-        #resetear el entorno para un nuevo episodio
-        #observation = env.reset()
-
         unity.newEpisode()
         observation = unity.newObservation()
+
+        initial_observation = np.array([observation[0], observation[1], observation[2], observation[0], observation[1], observation[2]])
 
         totalReward = 0
         totalQvalue = 0
 
-        print "exploration rate : ", explorationRate
         # number of timesteps
         for t in xrange(steps):
             if t != 0 :
                 unity.noEpisode()
 
-            qValues = deepQ.getQValues(observation)
+            if t == 0:
+                qValues = deepQ.getQValues(initial_observation)
+                observation = initial_observation
+            else:
+                qValues = deepQ.getQValues(observation)
 
             action = deepQ.selectAction(qValues, explorationRate)
+            newObservation_aux, done = unity.sendAction(allActions[action])
+            temp_observation = observation;
 
-            #newObservation esta basada en la accion anterior
-            newObservation, reward, done = unity.sendAction(allActions[action])
+            k=0
+            while np.array_equal(np.array([observation[0], observation[1], observation[2]]), np.array([newObservation_aux[0], newObservation_aux[1], newObservation_aux[2]])):
+                unity.noEpisode()
+                newObservation_aux, done = unity.sendAction(allActions[action])
+                # print "bucle ", k
+                # print "Action: ", allActions[action]
+                # print "Observation: ", observation
+                # print "newObservation: ", newObservation
+                if k == 20:
+                    break
+                k += 1
 
-            totalReward += reward
-            totalQvalue += deepQ.getMaxQ(qValues)
+            distance = np.sqrt(newObservation_aux[0]**2 + newObservation_aux[1]**2 + newObservation_aux[2]**2)
+            if (distance < lastDistance):
+                reward = 0
+                #reward = 0.5
+                #reward = np.exp(-1 * distance)
+                #reward = 1 - distance
+            else:
+                 reward = -1
 
+            newObservation = np.array([newObservation_aux[0], newObservation_aux[1], newObservation_aux[2],
+                                       newObservation_aux[0] - observation[0], newObservation_aux[1] - observation[1], newObservation_aux[2] - observation[2]])
 
-            if done: #and t < 199:
+            if done:
                 print "Sucess!"
                 numDones += 1
-                #reward = 0
 
             if (t == steps-1) and not done:
                 print "Failed. Time out"
                 done = True
-            #    reward = 1
+
+            totalReward += reward
+            totalQvalue += deepQ.getMaxQ(qValues)
 
             deepQ.addMemory(observation, action, reward, newObservation, done)
 
-            if stepCounter >= learnStart:
-                if stepCounter <= updateTargetNetwork:
-                    deepQ.learnOnMiniBatch(minibatch_size, False)
-                else :
-                    deepQ.learnOnMiniBatch(minibatch_size, True)
+            if Train:
+                if stepCounter >= learnStart:
+                    if stepCounter <= updateTargetNetwork:
+                        deepQ.learnOnMiniBatch(minibatch_size, False)
+                    else :
+                        deepQ.learnOnMiniBatch(minibatch_size, True)
 
             observation = newObservation
+            lastDistance = distance
 
             if done:
+                '''
                 last100Scores[last100ScoresIndex] = t
                 last100ScoresIndex += 1
                 if last100ScoresIndex >= 100:
@@ -418,47 +472,71 @@ with tf.device('/gpu:0'):
                     print "Episode ",epoch," finished after {} timesteps".format(t+1)
                 else :
                     print "Episode ",epoch," finished after {} timesteps".format(t+1)," last 100 average: ",(sum(last100Scores)/len(last100Scores))
-
-                #print "average reward in episode ", epoch, " is: ", totalReward
+                '''
                 plt.figure(1)
                 numEpoch.append(epoch)
                 numTimesteps.append(numDones)
                 plt.plot(numEpoch, numTimesteps, 'b-', linewidth=0.1)
                 fig1.canvas.draw()
-                plt.savefig("steps_episodes.png")
+                if Train:
+                    plt.savefig("train/steps_episodes.png")
+                else:
+                    plt.savefig("test/steps_episodes.png")
 
                 if (totalReward == 0):
                     averageReward.append(0)
                 else :
-                    averageReward.append(totalReward/(t+1))
+                    averageReward.append(totalReward)
+                    #averageReward.append(totalReward/(t+1))
 
                 plt.figure(2)
                 plt.plot(numEpoch, averageReward, 'b-', linewidth=0.1)
                 fig2.canvas.draw()
-                plt.savefig("reward_episodes.png")
+                if Train:
+                    plt.savefig("train/reward_episodes.png")
+                else :
+                    plt.savefig("test/reward_episodes.png")
 
                 plt.figure(3)
                 averageQvalue.append(totalQvalue/(t+1))
                 plt.plot(numEpoch, averageQvalue, 'b-', linewidth=0.1)
-                z = np.polyfit(numEpoch, averageQvalue, 1)
-                p = np.poly1d(z)
-                plt.plot(numEpoch,p(numEpoch),"r-", linewidth=1.5)
+                # z = np.polyfit(numEpoch, averageQvalue, 1)
+                # p = np.poly1d(z)
+                # plt.plot(numEpoch,p(numEpoch),"r--", linewidth=1.5)
                 fig3.canvas.draw()
-                plt.savefig("Qvalue_episodes.png")
+                if Train:
+                    plt.savefig("train/Qvalue_episodes.png")
+                else :
+                    plt.savefig("test/Qvalue_episodes.png")
+
+                plt.figure(4)
+                epsilon.append(explorationRate)
+                plt.plot(numEpoch, epsilon, 'b-', linewidth=0.1)
+                fig4.canvas.draw()
+                if Train:
+                    plt.savefig("train/epsilon.png")
+                else :
+                    plt.savefig("test/epsilon.png")
 
                 plt.show(block=False)
-                #plt.pause(0.0001)
+
+                print "Episode: {} Timestep: {} Epsilon: {} Total Reward: {} Average Q-Value: {} Observation: {}".format(epoch, t+1, explorationRate, totalReward, totalQvalue/(t+1), newObservation)
+                print "Success rate: {:.1%}".format(float(numDones)/float(epoch+1))
+                print "---------------------------------------------------------------------------"
+
+                if Train:
+                    deepQ.targetModel.save('savedModels/model_DQN.h5')
 
                 break
                 #sys.exit(0)
+
             stepCounter += 1
-            if stepCounter % updateTargetNetwork == 0:
-                deepQ.updateTargetNetwork()
-                print "updating target network"
+            if Train:
+                if stepCounter % updateTargetNetwork == 0:
+                    deepQ.updateTargetNetwork()
+                    #print "updating target network"
 
-            #print "Fin timestep ", t+1
-
-        explorationRate *= 0.995
+        explorationRate *= explorationFactor
         # explorationRate -= (2.0/epochs)
         explorationRate = max (0.05, explorationRate)
 

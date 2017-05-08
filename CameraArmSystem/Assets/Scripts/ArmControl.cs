@@ -52,7 +52,9 @@ public class ArmControl : MonoBehaviour {
 		upperArm.rotation = Quaternion.Lerp(upperArm.rotation, upperRotation, Time.deltaTime*Speed);
 
 		//print ("rotando lower arm");
-		lowerRotation = Quaternion.Euler(0, lowerRotationY, 0);
+		// lowerRotation = Quaternion.Euler(0, lowerRotationY, 0);
+		lowerRotation = Quaternion.Euler(upperRotationX, lowerRotationY, 0);
+		// lowerRotation = Quaternion.Euler(upperRotationX, upperRotationY, 0);
 		lowerArm.rotation = Quaternion.Lerp(lowerArm.rotation, lowerRotation, Time.deltaTime*Speed);
 	}
 
@@ -63,7 +65,8 @@ public class ArmControl : MonoBehaviour {
 		lowerRotationY = 0;
 
 		if((Quaternion.Angle(Quaternion.Euler(upperRotationX, upperRotationY, 0.0f), Quaternion.Euler(upperArm.transform.eulerAngles)) < 0.1f) &&
-			 (Quaternion.Angle(Quaternion.Euler(0.0f, lowerRotationY, 0.0f), Quaternion.Euler(lowerArm.transform.eulerAngles)) < 0.1f))
+			 (Quaternion.Angle(Quaternion.Euler(upperRotationX, lowerRotationY, 0.0f), Quaternion.Euler(lowerArm.transform.eulerAngles)) < 0.1f))
+		// if((Quaternion.Angle(Quaternion.Euler(upperRotationX, upperRotationY, 0.0f), Quaternion.Euler(upperArm.transform.eulerAngles)) < 0.1f))
 			{
 				return true;
 			}
@@ -90,6 +93,7 @@ public class ArmControl : MonoBehaviour {
 
 	//alfa, beta, gamma
 	public bool rotateArm(int upperRotX, int upperRotY, int lowerRotY)
+	// public bool rotateArm(int upperRotX, int upperRotY)
 	{
 		//positivo hacia abajo, negativo hacia arriba(inverso)
 		//positivo derecha, negativo izda
@@ -97,11 +101,16 @@ public class ArmControl : MonoBehaviour {
 		//print ("rotando upper arm");
 		if(firstR)
 		{
-			if (upperRotationX >= -90 && upperRotationX <= 90 && upperRotationY >= 0 && upperRotationY <= 90 && lowerRotationY >= -90 && lowerRotationY <= 90)
+			if (upperRotationX >= -70 && upperRotationX <= 70 && upperRotationY >= 0 && upperRotationY <= 90 && lowerRotationY >= -90 && lowerRotationY <= 0)
 			{
-				if ((upperRotationX == -90 && upperRotX == -1) || (upperRotationX == 90 && upperRotX == 1) ||
-				 		(upperRotationY == 0 && upperRotY == -1) || (upperRotationY == 90 && upperRotY == 1) ||
-				 		(lowerRotationY == -90 && lowerRotY == -1) || (lowerRotationY == 90 && lowerRotY == 1))
+				if ((upperRotationX == -70 && upperRotX == -1) || (upperRotationX == 70 && upperRotX == 1) ||
+						(upperRotationY == 0 && upperRotY == -1) || (upperRotationY == 90 && upperRotY == 1) ||
+						(lowerRotationY == -90 && lowerRotY == -1) || (lowerRotationY == 0 && lowerRotY == 1))
+
+			//  if (upperRotationX >= -70 && upperRotationX <= 70 && upperRotationY >= -90 && upperRotationY <= 90)
+			//  {
+			// 	if ((upperRotationX == -70 && upperRotX == -1) || (upperRotationX == 70 && upperRotX == 1) ||
+			// 	 		(upperRotationY == -90 && upperRotY == -1) || (upperRotationY == 90 && upperRotY == 1))
 				{
 					//do nothing
 				}
@@ -109,10 +118,13 @@ public class ArmControl : MonoBehaviour {
 					//print ("uX = " + upperRotX);
 					upperRotationX += upperRotX;
 					upperRotationY += upperRotY;
-
-					//print ("rotando lower arm");
 					lowerRotationY += lowerRotY;
-				}
+
+					upperRotationX %= 360;
+					upperRotationY %= 360;
+					lowerRotationY %= 360;
+					//print ("rotando lower arm");
+					}
 			}
 
 			text.text = "Alfa:       " + upperRotationX + "\nBeta:      " + upperRotationY + "\nGamma: " + lowerRotationY;
@@ -124,7 +136,8 @@ public class ArmControl : MonoBehaviour {
 		// while(!aux)
 		// {
 			if((Quaternion.Angle(Quaternion.Euler(upperRotationX, upperRotationY, 0.0f), Quaternion.Euler(upperArm.transform.eulerAngles)) < 0.1f) &&
-				 (Quaternion.Angle(Quaternion.Euler(0.0f, lowerRotationY, 0.0f), Quaternion.Euler(lowerArm.transform.eulerAngles)) < 0.1f))
+				 (Quaternion.Angle(Quaternion.Euler(upperRotationX, lowerRotationY, 0.0f), Quaternion.Euler(lowerArm.transform.eulerAngles)) < 0.1f))
+			// if((Quaternion.Angle(Quaternion.Euler(upperRotationX, upperRotationY, 0.0f), Quaternion.Euler(upperArm.transform.eulerAngles)) < 0.1f))
 				{
 					firstR = true;
 					return true;

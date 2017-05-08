@@ -26,6 +26,10 @@ public class UDP : MonoBehaviour {
 	private byte[] deltaBeta;
 	private byte[] deltaGamma;
 
+	private byte[] angleAlfa;
+	private byte[] angleBeta;
+	private byte[] angleGamma;
+
 	//(anguloAlfa, anguloBeta, anguloGamma)
 	private Vector3 anguloArm = new Vector3(0, 0, 0);
 
@@ -118,7 +122,6 @@ public class UDP : MonoBehaviour {
 			anguloArm.z = int.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 
-
 		}catch (Exception e ) {
 			Debug.Log(e.ToString());
 			anguloArm.x = 0;
@@ -156,7 +159,6 @@ public class UDP : MonoBehaviour {
 			anguloArm.z = int.Parse(mRecibir);
 			Array.Clear(bufRec, 0, bufRec.Length);
 
-
 		}catch (Exception e ) {
 			Debug.Log(e.ToString());
 			anguloArm.x = 0;
@@ -167,6 +169,7 @@ public class UDP : MonoBehaviour {
 		return anguloArm;
 	}
 
+	//, int gamma
 	public void sendResul (int alfa, int beta, int gamma) {
 		try{
 

@@ -19,6 +19,7 @@ public class GenerationManager : MonoBehaviour {
 	[Header("Distance_UI")]
 
 	public Text text;
+	public Text debug;
 
 //---
 
@@ -48,12 +49,6 @@ public class GenerationManager : MonoBehaviour {
 		StartCoroutine (GameLoop ());
 	}
 
-	// private void init()
-	// {
-	// 	this.GetComponent<UDP> ().init();
-	// 	StartCoroutine (GameLoop ());
-	// }
-
 	private IEnumerator GameLoop()
 	{
 		//print("Inicio bucle " + i);
@@ -73,9 +68,6 @@ public class GenerationManager : MonoBehaviour {
 	//preconfiguracion
 	private IEnumerator GenerationStarting()
 	{
-		//Mientras se espera a que acaben su movimiento el brazo y la cabeza se hacen iteraciones y se lee del socket, haciendo que python vaya 3 veces por delante que unity
-
-		//solo falta arreglar aqui
 		 if (this.GetComponent<UDP> ().nuevoEpisodio())
 		 {
 			 newEp = true;
@@ -105,16 +97,20 @@ public class GenerationManager : MonoBehaviour {
 		else {
 			angulos = this.GetComponent<UDP> ().EvaluaStep ();
 		}
+		debug.text = "despues de evalua";
 
 		while(!this.GetComponent<ArmControl> ().rotateArm ((int)angulos.x, (int)angulos.y, (int)angulos.z))
+		//while(!this.GetComponent<ArmControl> ().rotateArm ((int)angulos.x, (int)angulos.y))
 			yield return null;
 
+		debug.text = "despues de rotate arm";
 		finishedA = true;
 	}
 
 	private IEnumerator GenerationEnding()
 	{
 		int deltaAlfa, deltaBeta, deltaGamma;
+		int armAlfa, armBeta, armGamma;
 
 		if (finishedA && finishedH)
 		{
@@ -123,26 +119,21 @@ public class GenerationManager : MonoBehaviour {
 
 			resul = brazo.GetComponent<LaserBrazo> ().getImpactPoint ();
 
-			text.text = "Distancia: " + Vector3.Distance(resul, camara.GetComponent<LaserCamara> ().getImpactPoint ());
+			text.text = "Distancia: " + Vector3.Distance(new Vector3(resul.x, resul.y, 0),
+																									 new Vector3(camara.GetComponent<LaserCamara> ().getImpactPoint ().x, camara.GetComponent<LaserCamara> ().getImpactPoint ().y, 0));
 
 			// +-1 grado de error en cada componente
 			deltaAlfa = (int)(camara.GetComponent<LaserCamara> ().getImpactPoint ().x - resul.x);
 			deltaBeta = (int)(camara.GetComponent<LaserCamara> ().getImpactPoint ().y - resul.y);
 			deltaGamma = (int)(camara.GetComponent<LaserCamara> ().getImpactPoint ().z - resul.z);
 
+			debug.text = "antes de sendresul";
 			this.GetComponent<UDP> ().sendResul (deltaAlfa, deltaBeta, deltaGamma);
+			debug.text = "despues de sendresul";
 		}
 		else yield return null;
 
 		//yield return new WaitForSeconds(m_EndDelay);
 	}
 
-	// public void OnApplicationQuit()
-	// 	{
-	// 		 // end of application
-	// 		 if (managerThread != null)
-	// 		 {
-	// 				managerThread.Abort();
-	// 		 }
-	// 	 }
 }
